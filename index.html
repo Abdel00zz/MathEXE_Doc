@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mathify</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              gray: { '50': '#f8fafc', '100': '#f1f5f9', '200': '#e2e8f0', '300': '#cbd5e1', '400': '#94a3b8', '500': '#64748b', '600': '#475569', '700': '#334155', '800': '#1e293b', '900': '#0f172a', '950': '#020617' },
+              indigo: { '50': '#eef2ff', '100': '#e0e7ff', '200': '#c7d2fe', '300': '#a5b4fc', '400': '#818cf8', '500': '#6366f1', '600': '#4f46e5', '700': '#4338ca', '800': '#3730a3', '900': '#312e81', '950': '#1e1b4b' }
+            },
+            borderRadius: {
+              'lg': '0.5rem',
+              'xl': '0.75rem',
+              '2xl': '1rem',
+            },
+            keyframes: {
+                'fade-in': { from: { opacity: 0 }, to: { opacity: 1 } },
+                'scale-in': { from: { opacity: 0, transform: 'scale(0.95)' }, to: { opacity: 1, transform: 'scale(1)' } },
+                'slide-up-and-fade': { from: { opacity: 0, transform: 'translateY(1rem)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+                'slide-in-from-right': { from: { transform: 'translateX(100%)' }, to: { transform: 'translateX(0)' } },
+                'fade-out': { from: { opacity: 1 }, to: { opacity: 0 } }
+            },
+            animation: {
+                'modal-content-show': 'scale-in 0.2s ease-out',
+                'modal-overlay-show': 'fade-in 0.2s ease-out',
+                'sheet-content-show': 'slide-up-and-fade 0.25s ease-out',
+                'toast-slide-in': 'slide-in-from-right 0.3s ease-out',
+                'toast-fade-out': 'fade-out 0.3s ease-in forwards',
+                'list-item-appear': 'slide-up-and-fade 0.5s ease-out forwards',
+                'list-item-disappear': 'fade-out 0.3s ease-out forwards'
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      .prose ol, .prose ul {
+          list-style-position: outside !important;
+          padding-left: 1.5em !important;
+      }
+      .prose ol { list-style-type: decimal !important; }
+      .prose ul { list-style-type: disc !important; }
+      .prose ol ol { list-style-type: lower-alpha !important; }
+      .prose ol ol ol { list-style-type: lower-roman !important; }
+      .prose ul ul { list-style-type: circle !important; }
+      .prose ul ul ul { list-style-type: square !important; }
+      
+      .prose li > p {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+      }
+      .stretched-link::after {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1;
+        pointer-events: auto;
+        content: "";
+        background-color: rgba(0,0,0,0);
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background-color: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1; /* gray-300 */
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8; /* gray-400 */
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #475569; /* gray-600 */
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #64748b; /* gray-500 */
+      }
+      .dragging {
+        opacity: 0.5;
+        background: #eef2ff; /* indigo-50 */
+      }
+    </style>
+    
+    <!-- IMPORTANT: Configuration MathJax AVANT le chargement du script -->
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          packages: {'[+]': ['html', 'ams']}
+        },
+        options: {
+          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+          processHtmlClass: 'tex2jax_process',
+          ignoreHtmlClass: 'tex2jax_ignore'
+        },
+        startup: {
+          typeset: false,  // Désactiver le typesetting automatique au démarrage
+          ready: () => {
+            MathJax.startup.defaultReady();
+            MathJax.startup.promise.then(() => {
+              console.log('MathJax loaded and ready');
+              // Notifier que MathJax est prêt
+              window.MathJaxReady = true;
+            });
+          }
+        },
+        svg: {
+          fontCache: 'global'
+        },
+        chtml: {
+          scale: 1,
+          minScale: 0.5,
+          displayAlign: 'center',
+          displayIndent: '0'
+        }
+      };
+    </script>
+    
+    <!-- Chargement de MathJax -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "@/": "./",
+        "react/": "https://esm.sh/react@^19.1.1/",
+        "react": "https://esm.sh/react@^19.1.1",
+        "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+        "@google/genai": "https://esm.sh/@google/genai@^1.13.0",
+        "react-router-dom": "https://esm.sh/react-router-dom@^6.24.1",
+        "react-dropzone": "https://esm.sh/react-dropzone@^14.3.8",
+        "lucide-react": "https://esm.sh/lucide-react@^0.417.0"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-gray-200 font-sans antialiased">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+</body>
+</html>

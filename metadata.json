@@ -1,0 +1,6 @@
+{
+  "name": "Mathify",
+  "description": "An innovative educational platform for math teachers and students. It uses AI to analyze images of math exercises, automatically extracting content, structure, and LaTeX formulas to streamline the creation of structured mathematical documents.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
