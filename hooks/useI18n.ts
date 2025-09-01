@@ -86,10 +86,10 @@ const enTranslations = {
       "language": "Language",
       "teacherName": "Teacher's Name",
       "schoolId": "School ID/Number",
-      "save": "Save Settings"
+      "save": "Save Settings",
+      "autoAnalyzeImages": "Auto analyze images",
+      "autoAnalyzeImagesHint": "If enabled, analysis starts automatically when images are added."
     },
-  "autoAnalyzeImages": "Auto analyze images",
-  "autoAnalyzeImagesHint": "If enabled, analysis starts automatically when images are added.",
     "help": {
       "title": "Help & About",
       "editingTitle": "Editing Content",
@@ -142,10 +142,10 @@ const enTranslations = {
     "cancel": "Cancel",
     "open": "Open",
     "export": "Export",
-  "exportJson": "Export JSON",
-  "actions": "Actions",
-  "enabled": "Enabled",
-  "disabled": "Disabled"
+    "exportJson": "Export JSON",
+    "actions": "Actions",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "tooltips": {
     "settings": "Settings",
@@ -201,9 +201,7 @@ const frTranslations = {
       "contentLabel": "Contenu (HTML + LaTeX)",
       "preview": "Aperçu",
       "save": "Enregistrer"
-    },
-  "autoAnalyzeImages": "Analyse auto des images",
-  "autoAnalyzeImagesHint": "Si activé, l'analyse démarre automatiquement après l'ajout d'images.",
+  },
     "export": {
       "title": "Aperçu avant impression",
       "columns": "Mise en page",
@@ -241,7 +239,9 @@ const frTranslations = {
       "language": "Langue",
       "teacherName": "Nom de l'enseignant",
       "schoolId": "Numéro d'établissement",
-      "save": "Enregistrer"
+      "save": "Enregistrer",
+      "autoAnalyzeImages": "Analyse auto des images",
+      "autoAnalyzeImagesHint": "Si activé, l'analyse démarre automatiquement après l'ajout d'images."
     },
     "help": {
       "title": "Aide & À propos",

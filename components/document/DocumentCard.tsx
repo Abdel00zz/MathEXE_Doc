@@ -63,47 +63,44 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, isRecent = false 
     setActionsOpen(false);
   };
   
-  const highlightClass = isRecent 
-    ? 'bg-indigo-50 dark:bg-slate-800 border-indigo-500/50' 
-    : 'bg-white dark:bg-slate-800/50 border-transparent';
+  const highlightClass = isRecent
+    ? 'ring-2 ring-indigo-400/60 dark:ring-indigo-500/50'
+    : '';
 
   return (
     <>
-      <li className={`relative group transition-all duration-300 ease-in-out`}>
-        <Link to={`/document/${document.id}`} className="block p-1">
-          <div className={`relative flex flex-col h-full p-4 rounded-xl border transition-all duration-300 ease-in-out shadow-sm hover:shadow-lg hover:-translate-y-1 dark:shadow-slate-900/50 ${highlightClass}`}>
-            <div className="flex-grow">
-                <p className="text-base font-bold text-slate-800 dark:text-slate-100 truncate">{document.title}</p>
+      <li className="relative">
+        <Link to={`/document/${document.id}`} className="block">
+          <div className={`relative flex h-full items-start gap-4 rounded-lg border border-slate-300/70 dark:border-slate-600/60 bg-white dark:bg-slate-800 px-4 py-3 ${highlightClass}`}>
+            <div className="flex flex-col flex-grow min-w-0">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate tracking-tight">
+                {document.title}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                <span className="inline-flex items-center gap-1"><Book size={11} />{document.className}</span>
+                <span className="inline-flex items-center gap-1"><Calendar size={11} />{document.schoolYear}</span>
+                <span className="inline-flex items-center gap-1"><ListOrdered size={11} />{(document.exercises || []).length} {t('dashboard.documentCard.exercises')}</span>
+              </div>
             </div>
-            
-            <div className="flex justify-between items-center mt-3 text-xs text-slate-500 dark:text-slate-400">
-                <div className="flex items-center gap-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5"><Book size={12} /><span className="font-medium">{document.className}</span></div>
-                    <div className="flex items-center gap-1.5"><Calendar size={12} /><span className="font-medium">{document.schoolYear}</span></div>
-                    <div className="flex items-center gap-1.5"><ListOrdered size={12} /><span className="font-medium">{(document.exercises || []).length} {t('dashboard.documentCard.exercises')}</span></div>
-                </div>
-                <div className="text-slate-400 dark:text-slate-500 font-medium">
-                    <span>{lastModified.toLocaleDateString(settings.language)}</span>
-                </div>
+            <div className="flex flex-col items-end justify-between h-full text-[10px] text-slate-500 dark:text-slate-500 font-medium">
+              <span>{lastModified.toLocaleDateString(settings.language)}</span>
+              <div ref={actionsRef} className="relative mt-2">
+                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600" onClick={(e)=>{e.preventDefault(); setActionsOpen(o=>!o);}}>
+                  <MoreVertical size={16} />
+                </Button>
+                {isActionsOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 rounded-md shadow-md border border-slate-200 dark:border-slate-700 p-1 space-y-0.5 z-20">
+                    <DocumentCardAction onClick={(e) => handleAction(e, () => setEditModalOpen(true))} icon={<Pencil size={14} />} label={t('actions.edit')} />
+                    <DocumentCardAction onClick={(e) => handleAction(e, () => duplicateDocument(document.id))} icon={<Copy size={14} />} label={t('actions.duplicate')} />
+                    <DocumentCardAction onClick={handleExportJson} icon={<FileJson2 size={14} />} label={t('actions.exportJson')} />
+                    <div className="my-1 h-px bg-slate-200 dark:bg-slate-700" />
+                    <DocumentCardAction onClick={(e) => handleAction(e, () => setDeleteModalOpen(true))} icon={<Trash2 size={14} />} label={t('actions.delete')} className="text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-400" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </Link>
-        <div ref={actionsRef} className="absolute right-2 top-2 z-10 flex-shrink-0" onClick={e => e.stopPropagation()}>
-            <Tooltip text={t('tooltips.actions')}>
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setActionsOpen(c => !c)}>
-                    <MoreVertical size={20} />
-                </Button>
-            </Tooltip>
-            {isActionsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg z-20 border border-slate-200 dark:border-slate-700 p-2 space-y-1 origin-top-right">
-                <DocumentCardAction onClick={(e) => handleAction(e, () => setEditModalOpen(true))} icon={<Pencil size={16} />} label={t('actions.edit')} />
-                <DocumentCardAction onClick={(e) => handleAction(e, () => duplicateDocument(document.id))} icon={<Copy size={16} />} label={t('actions.duplicate')} />
-                <DocumentCardAction onClick={handleExportJson} icon={<FileJson2 size={16} />} label={t('actions.exportJson')} />
-                <div className="my-1 h-px bg-slate-200 dark:bg-slate-700" />
-                <DocumentCardAction onClick={(e) => handleAction(e, () => setDeleteModalOpen(true))} icon={<Trash2 size={16} />} label={t('actions.delete')} className="text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-400" />
-            </div>
-            )}
-        </div>
       </li>
 
       <NewDocumentModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} documentToEdit={document} />

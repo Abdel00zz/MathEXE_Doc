@@ -38,18 +38,16 @@ interface ImageUploadModalProps {
 }
 
 const StatusIcon: React.FC<{status: FileStatus}> = ({status}) => {
-    const iconClass = "text-white drop-shadow-md";
-    switch (status) {
-        case 'analyzing':
-            return <Loader size={28} className={`${iconClass}`}/>;
-        case 'success':
-            return <CheckCircle2 size={32} className={iconClass}/>;
-        case 'error':
-            return <AlertTriangle size={28} className="text-red-400 drop-shadow-md"/>;
-        default:
-            return null;
-    }
-}
+  const iconClass = "text-white drop-shadow-md";
+  if (status === 'analyzing') {
+    return (
+      <div className="modern-spinner" aria-label="Analyzing" />
+    );
+  }
+  if (status === 'success') return <CheckCircle2 size={32} className={iconClass}/>;
+  if (status === 'error') return <AlertTriangle size={28} className="text-red-400 drop-shadow-md"/>;
+  return null;
+};
 
 const ImageFileItem: React.FC<{ imageFile: ImageFile, onRemove: () => void }> = memo(({ imageFile, onRemove }) => {
     const { status } = imageFile;
@@ -64,12 +62,12 @@ const ImageFileItem: React.FC<{ imageFile: ImageFile, onRemove: () => void }> = 
       <div key={imageFile.id} className="relative aspect-square group overflow-hidden rounded-lg shadow-sm">
         <img src={imageFile.preview} alt={imageFile.file.name} className="w-full h-full object-cover"/>
         
-        <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200
-            ${isOverlayVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${overlayColor}`}
+        <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300
+            ${isOverlayVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${overlayColor} backdrop-blur-[2px]`}
         >
-             <div className="text-center text-white">
-                <StatusIcon status={status} />
-            </div>
+          <div className="text-center text-white">
+            <StatusIcon status={status} />
+          </div>
         </div>
 
         <button 
@@ -98,6 +96,13 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
     suggestHints: false,
   });
   const { addToast } = useToast();
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+    
+  // (Deferred) secondary trigger will be placed after handleAnalysis definition.
 
   useEffect(() => {
     // Clean up object URLs on unmount
@@ -124,56 +129,106 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
   }, [resetState, onClose, isAnalyzing]);
 
   const handleAnalysis = useCallback(async () => {
+    if (!isOpen) return; // avoid background trigger
     if (!isApiKeyValid || !settings.apiKey) {
       addToast(t('modals.imageUpload.apiKeyMissing'), 'error');
       return;
     }
-    const filesToAnalyze = files.filter(f => f.status === 'waiting' || f.status === 'error');
-    if (filesToAnalyze.length === 0) return;
+    const pending = files.filter(f => f.status === 'waiting' || f.status === 'error');
+    if (pending.length === 0) return;
     cancelRef.current = false;
-    setProgress({ completed: 0, total: filesToAnalyze.length });
+    setProgress({ completed: 0, total: pending.length });
     setIsAnalyzing(true);
 
+    const queue = [...pending];
     const concurrency = 3;
-    let cursor = 0;
 
-    const runNext = async (): Promise<void> => {
-      if (cancelRef.current) return;
-      const index = cursor++;
-      const imageFile = filesToAnalyze[index];
-      if (!imageFile) return;
-      setFiles(prev => prev.map(f => f.id === imageFile.id ? { ...f, status: 'analyzing' } : f));
-      try {
-        const base64Image = await fileToBase64(imageFile.file);
-        const analysisResult = await analyzeImageWithGemini(settings.apiKey!, base64Image, imageFile.file.type, analysisOptions);
-        setFiles(current => current.map(f => f.id === imageFile.id ? { ...f, status: 'success', result: analysisResult } : f));
-      } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : t('modals.imageUpload.error');
-        console.error(`Analysis failed for ${imageFile.file.name}:`, e);
-        addToast(`${imageFile.file.name}: ${errorMessage}`, 'error');
-        setFiles(current => current.map(f => f.id === imageFile.id ? { ...f, status: 'error', error: errorMessage } : f));
-      } finally {
-        setProgress(p => ({ ...p, completed: p.completed + 1 }));
-        await runNext();
+    const worker = async () => {
+      while (!cancelRef.current) {
+        const next = queue.shift();
+        if (!next) break;
+        if (!mountedRef.current) return;
+        setFiles(prev => prev.map(f => f.id === next.id ? { ...f, status: 'analyzing' } : f));
+        try {
+          const base64Image = await fileToBase64(next.file);
+          const analysisResult = await analyzeImageWithGemini(settings.apiKey!, base64Image, next.file.type, analysisOptions);
+          if (mountedRef.current) {
+            setFiles(current => current.map(f => f.id === next.id ? { ...f, status: 'success', result: analysisResult } : f));
+          }
+        } catch (e) {
+          const errorMessage = e instanceof Error ? e.message : t('modals.imageUpload.error');
+          console.error(`Analysis failed for ${next.file.name}:`, e);
+            if (mountedRef.current) {
+              addToast(`${next.file.name}: ${errorMessage}`, 'error');
+              setFiles(current => current.map(f => f.id === next.id ? { ...f, status: 'error', error: errorMessage } : f));
+            }
+        } finally {
+          if (mountedRef.current) {
+            setProgress(p => ({ ...p, completed: p.completed + 1 }));
+          }
+        }
       }
     };
 
-    await Promise.all(Array.from({ length: Math.min(concurrency, filesToAnalyze.length) }, () => runNext()));
-    setIsAnalyzing(false);
-  }, [files, isApiKeyValid, settings.apiKey, addToast, t, analysisOptions]);
+    try {
+      await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, () => worker()));
+    } catch (err) {
+      console.error('Unexpected analysis error:', err);
+      if (mountedRef.current) addToast('Unexpected analysis failure.', 'error');
+    } finally {
+      if (mountedRef.current) setIsAnalyzing(false);
+    }
+  }, [files, isOpen, isApiKeyValid, settings.apiKey, addToast, t, analysisOptions]);
 
+  // Secondary trigger: API key validated after files already dropped.
+  useEffect(() => {
+    if (!settings.autoAnalyzeImages) return;
+    if (isAnalyzing) return;
+    if (!isApiKeyValid) return; // wait for validation
+    if (!files.some(f => f.status === 'waiting')) return;
+    if (!isOpen) return;
+    const id = setTimeout(() => {
+      console.debug('[ImageUploadModal] Post-verify auto-analyze trigger');
+      handleAnalysis();
+    }, 120);
+    return () => clearTimeout(id);
+  }, [settings.autoAnalyzeImages, isAnalyzing, isApiKeyValid, files, handleAnalysis, isOpen]);
+
+  const autoAnalyzeScheduledRef = useRef(false);
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    const timestamp = Date.now();
     const newFiles: ImageFile[] = acceptedFiles.map(file => ({
-      id: `file_${Date.now()}_${Math.random()}`,
+      id: `file_${timestamp}_${Math.random()}`,
       file,
       preview: URL.createObjectURL(file),
       status: 'waiting',
     }));
-    setFiles(prev => [...prev, ...newFiles]);
-    if (settings.autoAnalyzeImages && !isAnalyzing && isApiKeyValid) {
-      setTimeout(() => handleAnalysis(), 10);
-    }
-  }, [settings.autoAnalyzeImages, isAnalyzing, isApiKeyValid, handleAnalysis]);
+    setFiles(prev => {
+      const merged = [...prev, ...newFiles];
+      // Auto-trigger only if there is at least one waiting file and option enabled
+      if (isOpen && settings.autoAnalyzeImages && !isAnalyzing && isApiKeyValid && !autoAnalyzeScheduledRef.current) {
+        autoAnalyzeScheduledRef.current = true;
+        console.debug('[ImageUploadModal] Auto-analyze scheduled', {
+          autoAnalyzeImages: settings.autoAnalyzeImages,
+          isAnalyzing,
+          isApiKeyValid,
+          waiting: merged.filter(f => f.status === 'waiting').length
+        });
+        setTimeout(() => {
+          handleAnalysis();
+          autoAnalyzeScheduledRef.current = false; // allow future drops after run
+        }, 50);
+      } else {
+        console.debug('[ImageUploadModal] Auto-analyze skipped', {
+          autoAnalyzeImages: settings.autoAnalyzeImages,
+          isAnalyzing,
+          isApiKeyValid,
+          reason: !isOpen ? 'modal_closed' : !settings.autoAnalyzeImages ? 'disabled' : isAnalyzing ? 'already_analyzing' : !isApiKeyValid ? 'invalid_api_key' : 'already_scheduled'
+        });
+      }
+      return merged;
+    });
+  }, [settings.autoAnalyzeImages, isAnalyzing, isApiKeyValid, handleAnalysis, isOpen]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -261,6 +316,11 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
   };
 
   return (
+    <>
+    {/* Auto-analyze status helper */}
+    {settings.autoAnalyzeImages && files.some(f=>f.status==='waiting') && !isAnalyzing && !isApiKeyValid && (
+      <div className="mb-2 text-xs text-amber-600 dark:text-amber-400 font-medium px-2">Auto-analyse en attente: clé API non validée.</div>
+    )}
     <Modal isOpen={isOpen} onClose={handleClose} title={t('modals.imageUpload.title')} size="4xl" footer={renderFooter()}>
       <div className="min-h-[50vh] max-h-[70vh] flex flex-col space-y-4">
          {!isApiKeyValid ? (
@@ -281,11 +341,14 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
                   {/* Auto analyze removed here; now managed via global Settings Modal */}
                 </div>
                 {isAnalyzing && (
-                  <div className="mt-4">
-                    <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-500 dark:bg-indigo-400 transition-all" style={{ width: progressPercent + '%' }} />
+                  <div className="mt-4 space-y-2">
+                    <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-700/70 rounded-full overflow-hidden">
+                      <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-indigo-500 via-indigo-400 to-indigo-600 dark:from-indigo-400 dark:via-indigo-300 dark:to-indigo-500 progress-bar" style={{ width: progressPercent + '%' }} />
                     </div>
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">{progress.completed}/{progress.total} ({progressPercent}%)</p>
+                    <p className="text-[11px] tracking-wide text-slate-500 dark:text-slate-400 font-medium flex justify-between">
+                      <span>{progress.completed}/{progress.total}</span>
+                      <span>{progressPercent}%</span>
+                    </p>
                   </div>
                 )}
               </div>
@@ -306,6 +369,12 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
                 </div>
               ) : (
                 <div className="p-4 overflow-y-auto custom-scrollbar h-full">
+                    {isAnalyzing && (
+                      <div className="mb-3 text-xs font-medium text-indigo-600 dark:text-indigo-300 flex items-center gap-2">
+                        <div className="modern-spinner tiny" />
+                        <span>Analyzing images…</span>
+                      </div>
+                    )}
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                         {files.map((imageFile) => (
                             <ImageFileItem 
@@ -329,7 +398,17 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
           </>
         )}
       </div>
-    </Modal>
+  </Modal>
+  <style>{`
+      .modern-spinner { width:34px; height:34px; position:relative; }
+      .modern-spinner:before, .modern-spinner:after { content:""; position:absolute; inset:0; border-radius:50%; border:3px solid rgba(255,255,255,0.35); }
+      .modern-spinner:after { border-top-color:#fff; border-right-color:#fff; animation:spin 0.75s linear infinite; }
+      .modern-spinner.tiny { width:16px; height:16px; }
+      .modern-spinner.tiny:before, .modern-spinner.tiny:after { border-width:2px; }
+      .progress-bar { transition: width 0.35s cubic-bezier(.4,.0,.2,1); }
+      @keyframes spin { to { transform:rotate(360deg); } }
+    `}</style>
+  </>
   );
 };
 

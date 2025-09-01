@@ -71,9 +71,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const handleThemeChange = useCallback((theme: 'light' | 'dark' | 'system') => {
     setLocalSettings(prev => ({ ...prev, theme }));
   }, []);
-  const handleToggleAutoAnalyze = useCallback(() => {
-    setLocalSettings(prev => ({ ...prev, autoAnalyzeImages: !prev.autoAnalyzeImages }));
-  }, []);
+  const handleToggleAutoAnalyze = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.checked;
+    setLocalSettings(prev => ({ ...prev, autoAnalyzeImages: value }));
+    updateSettings({ autoAnalyzeImages: value }); // persist immediately
+  }, [updateSettings]);
   
   const handleVerify = async () => {
     setVerificationStatus('verifying');
@@ -149,16 +151,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           onChange={handleChange}
         />
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2"><Image size={16}/>{t('modals.settings.autoAnalyzeImages') || 'Auto analyze images'}</label>
-          <button
-            type="button"
-            onClick={handleToggleAutoAnalyze}
-            className={`w-full flex items-center justify-between px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${localSettings.autoAnalyzeImages ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-600 text-green-700 dark:text-green-300' : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}
-          >
-            <span>{localSettings.autoAnalyzeImages ? t('actions.enabled') || 'Enabled' : t('actions.disabled') || 'Disabled'}</span>
-            <span className="text-xs opacity-80">{localSettings.autoAnalyzeImages ? 'ON' : 'OFF'}</span>
-          </button>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 leading-snug">{t('modals.settings.autoAnalyzeImagesHint') || 'If enabled, analysis starts automatically after adding images.'}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2"><Image size={16}/>{t('modals.settings.autoAnalyzeImages')}</label>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">{t('modals.settings.autoAnalyzeImagesHint')}</p>
+            </div>
+            <div className="flex items-center">
+              <label className="inline-flex items-center cursor-pointer select-none">
+                <input type="checkbox" className="sr-only" checked={!!localSettings.autoAnalyzeImages} onChange={handleToggleAutoAnalyze} />
+                <span className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${localSettings.autoAnalyzeImages ? 'bg-green-500' : 'bg-slate-400 dark:bg-slate-600'}`}>
+                  <span className={`bg-white w-4 h-4 rounded-full shadow transition-transform ${localSettings.autoAnalyzeImages ? 'translate-x-5' : ''}`}></span>
+                </span>
+              </label>
+            </div>
+          </div>
         </div>
         <div>
           <label htmlFor="language" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('modals.settings.language')}</label>

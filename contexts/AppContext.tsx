@@ -43,7 +43,11 @@ const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   autoAnalyzeImages: true,
   };
 
-  const [settings, setSettings] = useState<AppSettings>(() => getInitialState<AppSettings>(SETTINGS_STORAGE_KEY, defaultSettings));
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const stored = getInitialState<AppSettings>(SETTINGS_STORAGE_KEY, defaultSettings);
+    // Merge to ensure newly added defaults (like autoAnalyzeImages) are present
+    return { ...defaultSettings, ...stored };
+  });
   const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   const isMobile = useMobile();
   const { t } = useI18n(settings.language);

@@ -1,6 +1,11 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { GeminiExerciseResponse, GeminiAnalysisOptions } from "../types";
+// DOMPurify ESM default already bound to window in browser build; types export is a namespace function.
+// We import the default which has sanitize.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import DOMPurify from 'dompurify';
 
 /**
  * Cleans up common formatting issues from the AI's response content.
@@ -21,8 +26,113 @@ const cleanGeminiContent = (htmlContent: string): string => {
   // Rule 2: Remove potential markdown fences if the AI accidentally adds them.
   cleaned = cleaned.replace(/^```(?:html|json)?\s*\n?/im, '').replace(/\n?```\s*$/im, '');
 
-  return cleaned.trim();
+  cleaned = cleaned.trim();
+
+  // Normalize lists & numbering patterns BEFORE sanitization.
+  cleaned = normalizeEnumerations(cleaned);
+
+  // Sanitize (allow math delimiters). DOMPurify by default is safe; math delimiters are plain text.
+  const sanitized = DOMPurify.sanitize(cleaned, { USE_PROFILES: { html: true } });
+  return sanitized;
 };
+
+/**
+ * Converts textual enumeration patterns (e.g., '1)', 'a)', 'i)') that appear at the start of lines or sentences
+ * into properly nested ordered lists. Supports up to three levels: decimal, lower-alpha, lower-roman.
+ * This is heuristic but improves semantic structure for styling & accessibility.
+ */
+const normalizeEnumerations = (html: string): string => {
+  // Quick exit if lists already present in a significant way.
+  if (/<ol|<ul/.test(html) && /<li>/.test(html)) return html; // assume already structured
+
+  // Split by block boundaries: paragraphs, line breaks.
+  // Convert <br> to newlines for easier parsing, then later rebuild.
+  let work = html.replace(/<br\s*\/?>(?=\s*)/gi, '\n');
+
+  // Strip wrapping code fences left from earlier steps (defensive)
+  work = work.replace(/^```[a-z]*\n?|```$/gim, '');
+
+  const lines: string[] = [];
+  // Break at paragraph ends while preserving raw text markers
+  work.split(/\n+/).forEach(l => {
+    const trimmed = l.trim();
+    if (trimmed.length) lines.push(trimmed);
+  });
+
+  interface Item { level: number; label: string; text: string; }
+  const items: Item[] = [];
+
+  // Patterns for levels
+  const levelPatterns: { regex: RegExp; level: number; type: 'decimal'|'alpha'|'roman'; }[] = [
+    { regex: /^(?:\(?)(\d{1,2})(?:[\).:-])/ , level: 1, type: 'decimal' },
+    { regex: /^(?:\(?)([a-z])(?![a-zA-Z])(?:[\).:-])/, level: 2, type: 'alpha' },
+    { regex: /^(?:\(?)(i|ii|iii|iv|v|vi|vii|viii|ix|x)(?:[\).:-])/i, level: 3, type: 'roman' }
+  ];
+
+  lines.forEach(raw => {
+    let line = raw;
+    let matched = false;
+    for (const pat of levelPatterns) {
+      const m = line.match(pat.regex);
+      if (m) {
+        const label = m[1];
+        line = line.slice(m[0].length).trim();
+        items.push({ level: pat.level, label, text: line });
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      // Treat as paragraph sentinel; represent as level 0
+      items.push({ level: 0, label: '', text: raw });
+    }
+  });
+
+  // If we detected too few enumerated items, abort transformation.
+  const enumeratedCount = items.filter(i => i.level > 0).length;
+  if (enumeratedCount < 2) return html; // not enough to justify
+
+  const out: string[] = [];
+  const stack: number[] = []; // levels open
+  const openList = (level: number) => {
+    const typeAttr = level === 1 ? '' : level === 2 ? ' type="a"' : ' type="i"';
+    out.push(`<ol${typeAttr}>`);
+    stack.push(level);
+  };
+  const closeList = () => {
+    out.push('</ol>');
+    stack.pop();
+  };
+
+  const closeToLevel = (level: number) => {
+    while (stack.length && stack[stack.length - 1] > level) closeList();
+  };
+
+  items.forEach(item => {
+    if (item.level === 0) {
+      // Close any open lists
+      closeToLevel(0);
+      out.push(`<p>${escapeHtml(item.text)}</p>`);
+      return;
+    }
+    // Ensure we have a list for this level
+    if (!stack.length || stack[stack.length - 1] < item.level) {
+      // Open parent levels if needed
+      for (let lv = (stack[stack.length - 1] || 0) + 1; lv <= item.level; lv++) openList(lv);
+    } else if (stack[stack.length - 1] > item.level) {
+      closeToLevel(item.level);
+    }
+    out.push(`<li>${escapeHtml(item.text)}</li>`);
+  });
+  closeToLevel(0);
+
+  return out.join('');
+};
+
+const escapeHtml = (s: string) => s
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;');
 
 
 const exerciseSchema = {
@@ -136,7 +246,7 @@ export const verifyGeminiApiKey = async (apiKey: string): Promise<boolean> => {
         // Make a lightweight, non-generative call to verify the key.
         // A simple prompt with minimal output is a good way to test connectivity and authentication.
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.5-flash-lite',
             contents: 'ping',
             config: {
                 maxOutputTokens: 1,

@@ -11,9 +11,16 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
+  /**
+   * Controls the backdrop (dark translucent layer) behind the modal.
+   * 'dark' (default): semi-transparent dark + blur
+   * 'transparent': keeps layout overlay but no background/blur
+   * 'none': removes backdrop entirely (click outside will still close)
+   */
+  backdrop?: 'dark' | 'transparent' | 'none';
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'md', backdrop = 'dark' }) => {
   const isMobile = useMobile();
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -34,14 +41,21 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
     '7xl': 'max-w-7xl',
   };
 
-  const desktopContainerClasses = `fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm`;
-  const mobileContainerClasses = `fixed inset-0 bg-gray-900/60 z-50 flex flex-col justify-end backdrop-blur-sm`;
+  const backdropBase = 'fixed inset-0 z-50';
+  const backdropStyle = backdrop === 'dark'
+    ? 'bg-gray-900/60 backdrop-blur-sm'
+    : backdrop === 'transparent'
+      ? 'bg-transparent'
+      : 'pointer-events-none';
+  // If no backdrop, still need a flex wrapper to center panel.
+  const desktopContainerClasses = `${backdropBase} flex items-center justify-center p-4 ${backdrop !== 'none' ? backdropStyle : ''}`;
+  const mobileContainerClasses = `${backdropBase} flex flex-col justify-end ${backdrop !== 'none' ? backdropStyle : ''}`;
   
   const panelDesktopClasses = `bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full ${sizeClasses[size]} flex flex-col max-h-[90vh]`;
   const panelMobileClasses = `bg-white dark:bg-gray-900 rounded-t-xl shadow-xl w-full flex flex-col max-h-[90vh]`;
 
   return (
-    <div className={isMobile ? mobileContainerClasses : desktopContainerClasses} onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div className={isMobile ? mobileContainerClasses : desktopContainerClasses} onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title" data-modal-backdrop={backdrop}>
       <div 
         ref={modalRef}
         className={isMobile ? panelMobileClasses : panelDesktopClasses}
