@@ -215,6 +215,9 @@ const getStyles = (options: ExportOptions) => {
           background: #ffffff !important;
           color: #000000 !important;
         }
+        /* Ensure math (SVG from MathJax) does not appear bold when printed */
+        .mjx-svg text { font-weight: 400 !important; stroke: none !important; }
+        .mjx-math, .mjx-mrow { font-weight: 400 !important; }
       }
 
       ${themeStyles}
@@ -252,6 +255,11 @@ export const generateHtmlForExport = (
   settings: AppSettings,
   options: ExportOptions
 ): string => {
+  // Filter out exercises with no meaningful textual content, title, or keywords to avoid blank printed sections
+  const visibleExercises = doc.exercises.filter(ex => {
+    const raw = (ex.content || '').replace(/<[^>]+>/g, '').trim();
+    return raw.length > 0 || (ex.title && ex.title.trim().length > 0) || (ex.keywords && ex.keywords.length > 0);
+  });
   const formattedDate = new Date(doc.date).toLocaleDateString(settings.language, { year: 'numeric', month: 'long', day: 'numeric' });
   const isDarkMode = settings.theme === 'dark' || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   return `
@@ -275,7 +283,7 @@ export const generateHtmlForExport = (
               <span>${formattedDate}</span>
             </div>
           </header>
-          ${doc.exercises.map((ex, i) => renderExercise(ex, i, options)).join('')}
+          ${visibleExercises.map((ex, i) => renderExercise(ex, i, options)).join('')}
         </main>
       </div>
     </body>

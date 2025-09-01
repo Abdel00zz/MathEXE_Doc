@@ -83,6 +83,8 @@ const enTranslations = {
         "valid": "Connection successful!",
         "invalid": "Invalid API Key or connection failed."
       },
+  "getGeminiApiKey": "Get an API key",
+  "noApiKey": "Don't have one?",
       "language": "Language",
       "teacherName": "Teacher's Name",
       "schoolId": "School ID/Number",
@@ -236,6 +238,8 @@ const frTranslations = {
         "valid": "Connexion réussie !",
         "invalid": "Clé API invalide ou échec de la connexion."
       },
+  "getGeminiApiKey": "Obtenir une clé API",
+  "noApiKey": "Pas encore de clé ?",
       "language": "Langue",
       "teacherName": "Nom de l'enseignant",
       "schoolId": "Numéro d'établissement",

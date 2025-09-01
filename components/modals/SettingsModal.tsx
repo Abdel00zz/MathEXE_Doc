@@ -130,8 +130,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             onChange={handleChange}
             placeholder={t('modals.settings.geminiApiKeyPlaceholder')}
           />
-          <div className="flex items-center justify-end gap-4 min-h-[36px]">
-            <VerificationStatusIndicator status={verificationStatus} t={t} />
+          <div className="flex flex-wrap items-center gap-4 min-h-[36px] w-full">
+            <div className="flex items-center gap-3">
+              <VerificationStatusIndicator status={verificationStatus} t={t} />
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span>{t('modals.settings.noApiKey')}</span>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap"
+                >{t('modals.settings.getGeminiApiKey')}</a>
+              </div>
+            </div>
+            <div className="flex-grow" />
             <Button variant="secondary" size="sm" onClick={handleVerify} isLoading={verificationStatus === 'verifying'}>
               {t('modals.settings.verifyConnection')}
             </Button>
