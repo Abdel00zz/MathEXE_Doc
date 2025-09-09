@@ -101,6 +101,19 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+  // Live refs to avoid stale-closure issues in async/effects/timeouts
+  const filesRef = useRef<ImageFile[]>([]);
+  useEffect(() => { filesRef.current = files; }, [files]);
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+  const isApiKeyValidRef = useRef(isApiKeyValid);
+  useEffect(() => { isApiKeyValidRef.current = isApiKeyValid; }, [isApiKeyValid]);
+  const apiKeyRef = useRef(settings.apiKey);
+  useEffect(() => { apiKeyRef.current = settings.apiKey; }, [settings.apiKey]);
+  const analysisOptionsRef = useRef(analysisOptions);
+  useEffect(() => { analysisOptionsRef.current = analysisOptions; }, [analysisOptions]);
+  const isAnalyzingRef = useRef(isAnalyzing);
+  useEffect(() => { isAnalyzingRef.current = isAnalyzing; }, [isAnalyzing]);
     
   // (Deferred) secondary trigger will be placed after handleAnalysis definition.
 
@@ -129,12 +142,12 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
   }, [resetState, onClose, isAnalyzing]);
 
   const handleAnalysis = useCallback(async () => {
-    if (!isOpen) return; // avoid background trigger
-    if (!isApiKeyValid || !settings.apiKey) {
+    if (!isOpenRef.current) return; // avoid background trigger
+    if (!isApiKeyValidRef.current || !apiKeyRef.current) {
       addToast(t('modals.imageUpload.apiKeyMissing'), 'error');
       return;
     }
-    const pending = files.filter(f => f.status === 'waiting' || f.status === 'error');
+    const pending = filesRef.current.filter(f => f.status === 'waiting' || f.status === 'error');
     if (pending.length === 0) return;
     cancelRef.current = false;
     setProgress({ completed: 0, total: pending.length });
@@ -151,7 +164,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
         setFiles(prev => prev.map(f => f.id === next.id ? { ...f, status: 'analyzing' } : f));
         try {
           const base64Image = await fileToBase64(next.file);
-          const analysisResult = await analyzeImageWithGemini(settings.apiKey!, base64Image, next.file.type, analysisOptions);
+          const analysisResult = await analyzeImageWithGemini(apiKeyRef.current!, base64Image, next.file.type, analysisOptionsRef.current);
           if (mountedRef.current) {
             setFiles(current => current.map(f => f.id === next.id ? { ...f, status: 'success', result: analysisResult } : f));
           }
@@ -178,7 +191,11 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
     } finally {
       if (mountedRef.current) setIsAnalyzing(false);
     }
-  }, [files, isOpen, isApiKeyValid, settings.apiKey, addToast, t, analysisOptions]);
+  }, [addToast, t]);
+
+  // Stable ref to latest handleAnalysis for use inside timers/effects safely
+  const handleAnalysisRef = useRef<() => Promise<void>>();
+  useEffect(() => { handleAnalysisRef.current = handleAnalysis; }, [handleAnalysis]);
 
   // Secondary trigger: API key validated after files already dropped.
   useEffect(() => {
@@ -189,7 +206,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
     if (!isOpen) return;
     const id = setTimeout(() => {
       console.debug('[ImageUploadModal] Post-verify auto-analyze trigger');
-      handleAnalysis();
+      handleAnalysisRef.current?.();
     }, 120);
     return () => clearTimeout(id);
   }, [settings.autoAnalyzeImages, isAnalyzing, isApiKeyValid, files, handleAnalysis, isOpen]);
@@ -206,29 +223,29 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ isOpen, onClose, do
     setFiles(prev => {
       const merged = [...prev, ...newFiles];
       // Auto-trigger only if there is at least one waiting file and option enabled
-      if (isOpen && settings.autoAnalyzeImages && !isAnalyzing && isApiKeyValid && !autoAnalyzeScheduledRef.current) {
+    if (isOpenRef.current && settings.autoAnalyzeImages && !isAnalyzingRef.current && isApiKeyValidRef.current && !autoAnalyzeScheduledRef.current) {
         autoAnalyzeScheduledRef.current = true;
         console.debug('[ImageUploadModal] Auto-analyze scheduled', {
           autoAnalyzeImages: settings.autoAnalyzeImages,
-          isAnalyzing,
-          isApiKeyValid,
+      isAnalyzing: isAnalyzingRef.current,
+      isApiKeyValid: isApiKeyValidRef.current,
           waiting: merged.filter(f => f.status === 'waiting').length
         });
         setTimeout(() => {
-          handleAnalysis();
+      handleAnalysisRef.current?.();
           autoAnalyzeScheduledRef.current = false; // allow future drops after run
         }, 50);
       } else {
         console.debug('[ImageUploadModal] Auto-analyze skipped', {
           autoAnalyzeImages: settings.autoAnalyzeImages,
-          isAnalyzing,
-          isApiKeyValid,
-          reason: !isOpen ? 'modal_closed' : !settings.autoAnalyzeImages ? 'disabled' : isAnalyzing ? 'already_analyzing' : !isApiKeyValid ? 'invalid_api_key' : 'already_scheduled'
+      isAnalyzing: isAnalyzingRef.current,
+      isApiKeyValid: isApiKeyValidRef.current,
+      reason: !isOpenRef.current ? 'modal_closed' : !settings.autoAnalyzeImages ? 'disabled' : isAnalyzingRef.current ? 'already_analyzing' : !isApiKeyValidRef.current ? 'invalid_api_key' : 'already_scheduled'
         });
       }
       return merged;
     });
-  }, [settings.autoAnalyzeImages, isAnalyzing, isApiKeyValid, handleAnalysis, isOpen]);
+  }, [settings.autoAnalyzeImages]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

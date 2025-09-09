@@ -2,14 +2,16 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/layout/Header';
+import OrientationPrompt from './components/modals/OrientationPrompt';
 import Dashboard from './components/document/Dashboard';
 import DocumentEditor from './components/document/DocumentEditor';
+import { ToolboxProvider, useToolbox } from './contexts/ToolboxContext';
 import { useSettings } from './hooks/useSettings';
 import Spinner from './components/ui/Spinner';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import Button from './components/ui/Button';
 
-function App() {
+function AppContent() {
   const { settings } = useSettings();
 
   React.useEffect(() => {
@@ -26,8 +28,6 @@ function App() {
     root.classList.toggle('dark', isDark);
   }, [settings.theme]);
 
-  
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950">
       <Header />
@@ -38,7 +38,16 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
+      <OrientationPrompt delayMs={3000} />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ToolboxProvider>
+      <AppContent />
+    </ToolboxProvider>
   );
 }
 

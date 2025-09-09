@@ -17,9 +17,11 @@ interface DocumentCardProps {
 }
 
 const DocumentCardAction: React.FC<{onClick: (e: React.MouseEvent) => void, icon: React.ReactNode, label: string, className?: string}> = ({ onClick, icon, label, className }) => (
-    <button onClick={onClick} className={`flex items-center gap-3 w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors ${className}`}>
-        {icon}
-        <span>{label}</span>
+    <button onClick={onClick} className={`flex items-center gap-3 w-full text-left px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50/80 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-200 ${className}`}>
+        <div className="w-5 h-5 flex items-center justify-center">
+          {icon}
+        </div>
+        <span className="font-medium">{label}</span>
     </button>
 );
 
@@ -64,37 +66,54 @@ const DocumentCard: React.FC<DocumentCardProps> = ({ document, isRecent = false 
   };
   
   const highlightClass = isRecent
-    ? 'ring-2 ring-indigo-400/60 dark:ring-indigo-500/50'
+    ? 'ring-2 ring-blue-400/60 dark:ring-blue-500/50'
     : '';
 
   return (
     <>
-      <li className="relative">
+      <li className="relative group">
         <Link to={`/document/${document.id}`} className="block">
-          <div className={`relative flex h-full items-start gap-4 rounded-lg border border-slate-300/70 dark:border-slate-600/60 bg-white dark:bg-slate-800 px-4 py-3 ${highlightClass}`}>
+          <div className={`relative flex h-full items-start gap-4 rounded-lg bg-white dark:bg-gray-800 px-5 py-4 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-200 group-hover:border-gray-300 dark:group-hover:border-gray-600 ${highlightClass}`}>
             <div className="flex flex-col flex-grow min-w-0">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate tracking-tight">
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate tracking-tight mb-3 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
                 {document.title}
               </p>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
-                <span className="inline-flex items-center gap-1"><Book size={11} />{document.className}</span>
-                <span className="inline-flex items-center gap-1"><Calendar size={11} />{document.schoolYear}</span>
-                <span className="inline-flex items-center gap-1"><ListOrdered size={11} />{(document.exercises || []).length} {t('dashboard.documentCard.exercises')}</span>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <span className="inline-flex items-center gap-2">
+                  <Book size={14} className="text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">{document.className}</span>
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <Calendar size={14} className="text-green-600 dark:text-green-400" />
+                  <span className="font-medium">{document.schoolYear}</span>
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <ListOrdered size={14} className="text-purple-600 dark:text-purple-400" />
+                  <span className="font-medium">{(document.exercises || []).length} {t('dashboard.documentCard.exercises')}</span>
+                </span>
               </div>
             </div>
-            <div className="flex flex-col items-end justify-between h-full text-[10px] text-slate-500 dark:text-slate-500 font-medium">
-              <span>{lastModified.toLocaleDateString(settings.language)}</span>
-              <div ref={actionsRef} className="relative mt-2">
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600" onClick={(e)=>{e.preventDefault(); setActionsOpen(o=>!o);}}>
-                  <MoreVertical size={16} />
+            
+            <div className="flex flex-col items-end justify-between h-full">
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                {lastModified.toLocaleDateString(settings.language)}
+              </span>
+              <div ref={actionsRef} className="relative mt-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-all duration-200" 
+                  onClick={(e)=>{e.preventDefault(); setActionsOpen(o=>!o);}}
+                >
+                  <MoreVertical size={16} className="text-gray-600 dark:text-gray-400" />
                 </Button>
                 {isActionsOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 rounded-md shadow-md border border-slate-200 dark:border-slate-700 p-1 space-y-0.5 z-20">
+                  <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-2 space-y-1 z-20">
                     <DocumentCardAction onClick={(e) => handleAction(e, () => setEditModalOpen(true))} icon={<Pencil size={14} />} label={t('actions.edit')} />
                     <DocumentCardAction onClick={(e) => handleAction(e, () => duplicateDocument(document.id))} icon={<Copy size={14} />} label={t('actions.duplicate')} />
                     <DocumentCardAction onClick={handleExportJson} icon={<FileJson2 size={14} />} label={t('actions.exportJson')} />
-                    <div className="my-1 h-px bg-slate-200 dark:bg-slate-700" />
-                    <DocumentCardAction onClick={(e) => handleAction(e, () => setDeleteModalOpen(true))} icon={<Trash2 size={14} />} label={t('actions.delete')} className="text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-400" />
+                    <div className="my-1.5 h-px bg-gray-200 dark:bg-gray-700" />
+                    <DocumentCardAction onClick={(e) => handleAction(e, () => setDeleteModalOpen(true))} icon={<Trash2 size={14} />} label={t('actions.delete')} className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300" />
                   </div>
                 )}
               </div>
