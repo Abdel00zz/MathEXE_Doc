@@ -18,6 +18,20 @@ const enTranslations = {
       "lastModified": "Modified"
     }
   },
+  "menu": {
+    "new": "New",
+    "import": "Import",
+    "search": "Search",
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search across all content (titles, exercises, keywords, formulas)…",
+    "tip": "Tip: type multiple words, search covers titles, classes, years, keywords and content (HTML/LaTeX included).",
+    "noResults": "No results.",
+    "open": "Open"
+  },
   "documentEditor": {
     "backToDashboard": "Back to documents",
     "addExercise": "Add exercise",
@@ -207,6 +221,20 @@ const frTranslations = {
       "year": "Année",
       "lastModified": "Modifié"
     }
+  },
+  "menu": {
+    "new": "Nouveau",
+    "import": "Importer",
+    "search": "Rechercher",
+    "settings": "Configuration",
+    "help": "Aide"
+  },
+  "search": {
+    "title": "Rechercher",
+    "placeholder": "Rechercher dans tous les contenus (titres, exercices, mots-clés, formules)…",
+    "tip": "Astuce: tapez plusieurs mots, la recherche parcourt titres, classes, années, mots‑clés et contenu (HTML/LaTeX inclus).",
+    "noResults": "Aucun résultat.",
+    "open": "Ouvrir"
   },
   "documentEditor": {
     "backToDashboard": "Retour aux documents",
