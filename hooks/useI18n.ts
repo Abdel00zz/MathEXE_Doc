@@ -32,6 +32,12 @@ const enTranslations = {
     "noResults": "No results.",
     "open": "Open"
   },
+  "orientation": {
+    "title": "Orientation Tip",
+    "message": "For a better experience",
+    "instruction": "Rotate your device to landscape mode to enjoy more display space",
+    "dismiss": "Don't show again"
+  },
   "documentEditor": {
     "backToDashboard": "Back to documents",
     "addExercise": "Add exercise",
@@ -235,6 +241,12 @@ const frTranslations = {
     "tip": "Astuce: tapez plusieurs mots, la recherche parcourt titres, classes, années, mots‑clés et contenu (HTML/LaTeX inclus).",
     "noResults": "Aucun résultat.",
     "open": "Ouvrir"
+  },
+  "orientation": {
+    "title": "Conseil d'orientation",
+    "message": "Pour une meilleure expérience",
+    "instruction": "Tournez votre appareil en mode paysage pour profiter de plus d'espace d'affichage",
+    "dismiss": "Ne plus afficher"
   },
   "documentEditor": {
     "backToDashboard": "Retour aux documents",
