@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
 
       {documents.length > 0 ? (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
-          <ul className="divide-y divide-gray-200 dark:divide-gray-800 p-3 space-y-3">
+          <ul className="p-3 space-y-3">
             {documents.map(doc => (
               <DocumentCard key={doc.id} document={doc} isRecent={doc.id === recentlyDuplicatedId} />
             ))}
@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
           {/* Compact toolbox menu - Mobile first */}
           <div className={`absolute bottom-16 right-0 transition-all duration-200 ease-out ${toolboxOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2 pointer-events-none'}`}>
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-2 space-y-1 min-w-[180px] sm:min-w-[200px]">
-              {/* Compact action buttons */}
+              {/* Actions principales */}
               <button
                 onClick={() => {setModalOpen(true); closeToolbox();}}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 transition-colors touch-manipulation"
@@ -141,16 +141,6 @@ const Dashboard: React.FC = () => {
                   <FolderPlus size={14} className="text-blue-600 dark:text-blue-400" />
                 </div>
                 <span className="font-medium text-sm">Nouveau</span>
-              </button>
-              
-              <button
-                onClick={() => {setSearchOpen(true); closeToolbox();}}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 transition-colors touch-manipulation"
-              >
-                <div className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                  <Search size={14} className="text-green-600 dark:text-green-400" />
-                </div>
-                <span className="font-medium text-sm">Rechercher</span>
               </button>
               
               <button
@@ -163,16 +153,21 @@ const Dashboard: React.FC = () => {
                 <span className="font-medium text-sm">Importer</span>
               </button>
               
+              {/* Navigation */}
               <button
-                onClick={() => {setHelpOpen(true); closeToolbox();}}
+                onClick={() => {setSearchOpen(true); closeToolbox();}}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 transition-colors touch-manipulation"
               >
-                <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                  <HelpCircle size={14} className="text-purple-600 dark:text-purple-400" />
+                <div className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                  <Search size={14} className="text-green-600 dark:text-green-400" />
                 </div>
-                <span className="font-medium text-sm">Aide</span>
+                <span className="font-medium text-sm">Rechercher</span>
               </button>
               
+              {/* Séparateur */}
+              <div className="my-1.5 h-px bg-gray-200 dark:bg-gray-700" />
+              
+              {/* Configuration et aide */}
               <button
                 onClick={() => {setSettingsOpen(true); closeToolbox();}}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 transition-colors touch-manipulation"
@@ -181,6 +176,16 @@ const Dashboard: React.FC = () => {
                   <Settings size={14} className="text-gray-600 dark:text-gray-400" />
                 </div>
                 <span className="font-medium text-sm">Configuration</span>
+              </button>
+              
+              <button
+                onClick={() => {setHelpOpen(true); closeToolbox();}}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 transition-colors touch-manipulation"
+              >
+                <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                  <HelpCircle size={14} className="text-purple-600 dark:text-purple-400" />
+                </div>
+                <span className="font-medium text-sm">Aide</span>
               </button>
             </div>
           </div>
