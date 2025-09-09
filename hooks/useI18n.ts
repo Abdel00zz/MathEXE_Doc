@@ -35,8 +35,8 @@ const enTranslations = {
   "orientation": {
     "title": "Orientation Tip",
     "message": "For a better experience",
-    "instruction": "Rotate your device to landscape mode to enjoy more display space",
-    "dismiss": "Don't show again"
+    "instruction": "Rotate your device to landscape mode for a better viewing experience",
+    "dismiss": "Got it"
   },
   "documentEditor": {
     "backToDashboard": "Back to documents",
@@ -245,8 +245,8 @@ const frTranslations = {
   "orientation": {
     "title": "Conseil d'orientation",
     "message": "Pour une meilleure expérience",
-    "instruction": "Tournez votre appareil en mode paysage pour profiter de plus d'espace d'affichage",
-    "dismiss": "Ne plus afficher"
+    "instruction": "Tournez votre appareil en mode paysage pour une meilleure expérience d'affichage",
+    "dismiss": "Compris"
   },
   "documentEditor": {
     "backToDashboard": "Retour aux documents",
